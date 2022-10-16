@@ -28,3 +28,7 @@ bcc修改参见
 - https://github.com/SeeFlowerX/unwindbcc/commit/f6548633e1d8afd527637f0da69959046986a25c
 
 原理，代码修改等，请查阅[eBPF on Android之实现基于dwarf的用户态栈回溯](https://blog.seeflower.dev/archives/175/)
+
+## 效果示意图
+
+![](./Snipaste_2022-10-16_21-55-55.png)
