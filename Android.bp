@@ -1,0 +1,16 @@
+cc_binary {
+    name: "unwinddaemon",
+    srcs: ["main.cpp"],
+
+    cflags: [
+        "-Wall",
+        "-Werror",
+        "-Wextra",
+    ],
+
+    shared_libs: [
+        "libbase",
+        "liblog",
+        "libunwindstack",
+    ],
+}
