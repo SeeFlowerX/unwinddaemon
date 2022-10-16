@@ -18,3 +18,13 @@
 将`out/target/product/generic_arm64/system/bin/unwinddaemon`推送到手机的`/data/local/tmp`，授予可执行权限
 
 然后执行`/data/local/tmp/unwinddaemon`即可
+
+`hook_open_with_stack.py`是配合bcc修改使用的demo
+
+`bin/unwinddaemon`是预编译好的，但不一定兼容
+
+bcc修改参见
+
+- https://github.com/SeeFlowerX/unwindbcc/commit/f6548633e1d8afd527637f0da69959046986a25c
+
+原理，代码修改等，请查阅[eBPF on Android之实现基于dwarf的用户态栈回溯](https://blog.seeflower.dev/archives/175/)
