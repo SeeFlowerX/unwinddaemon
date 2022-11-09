@@ -32,3 +32,21 @@ bcc修改参见
 ## 效果示意图
 
 ![](./Snipaste_2022-10-16_21-55-55.png)
+
+---
+
+## 共享库版本
+
+编译`lib.cpp`得到的产物如下，在[SeeFlowerX/stackplz](https://github.com/SeeFlowerX/stackplz)中使用
+
+```bash
+ld-android.so
+libbase.so
+libc++.so
+libdl.so
+liblog.so
+liblzma.so
+libm.so
+libstackplz.so
+libunwindstack.so
+```

@@ -14,3 +14,29 @@ cc_binary {
         "libunwindstack",
     ],
 }
+
+cc_library_shared {
+    name: "libstackplz",
+    srcs: ["lib.cpp"],
+    
+    cflags: [
+        "-g",
+        "-Wall",
+        "-Werror",
+        "-Wextra",
+    ],
+
+    shared_libs: [
+        "liblog",
+        "libbase",
+    ],
+
+    static_libs: [
+        "libunwindstack",
+        "libdexfile_support",
+        "liblzma",
+        "libasync_safe",
+    ],
+
+    min_sdk_version: "29",
+}
