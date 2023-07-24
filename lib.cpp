@@ -43,7 +43,6 @@ struct UnwindBuf {
     uint64_t abi;
     uint64_t regs[33];
     uint64_t size;
-    char data[16384];
     uint64_t dyn_size;
 };
 
@@ -225,7 +224,7 @@ unwindstack::Regs* GetBacktraceRegs(const RegSet& regs) {
   }
 }
 
-const char* UnwindCallChain(int pid, uint64_t reg_mask, UnwindBuf *data_buf) {
+const char* UnwindCallChain(char* map_buffer, uint64_t reg_mask, UnwindBuf *data_buf, void* stack_buf) {
     const char* result = "";
     // std::cerr << "pid:" << pid << "reg_mask:" << reg_mask << "abi:" << data_buf->abi << std::endl;
     RegSet regs(data_buf->abi, reg_mask, data_buf->regs);
@@ -237,7 +236,6 @@ const char* UnwindCallChain(int pid, uint64_t reg_mask, UnwindBuf *data_buf) {
     }
     
     uint64_t stack_addr = sp_reg_value;
-    const char *stack = data_buf->data;
     size_t stack_size = data_buf->dyn_size;
     
     std::unique_ptr<unwindstack::Regs> unwind_regs(GetBacktraceRegs(regs));
@@ -245,14 +243,11 @@ const char* UnwindCallChain(int pid, uint64_t reg_mask, UnwindBuf *data_buf) {
       return result;
     }
     std::shared_ptr<unwindstack::Memory> stack_memory = unwindstack::Memory::CreateOfflineMemory(
-        reinterpret_cast<const uint8_t*>(stack), stack_addr, stack_addr + stack_size
+        reinterpret_cast<const uint8_t*>(stack_buf), stack_addr, stack_addr + stack_size
     );
 
-    std::string map_buffer;
     std::unique_ptr<unwindstack::Maps> maps;
-    std::string proc_map_file = "/proc/" + std::to_string(pid) + "/maps";
-    android::base::ReadFileToString(proc_map_file, &map_buffer);
-    maps.reset(new unwindstack::BufferMaps(map_buffer.c_str()));
+    maps.reset(new unwindstack::BufferMaps(map_buffer));
     maps->Parse();
     unwindstack::Unwinder unwinder(512, maps.get(), unwind_regs.get(), stack_memory);
     // default is true
@@ -267,6 +262,6 @@ const char* UnwindCallChain(int pid, uint64_t reg_mask, UnwindBuf *data_buf) {
 }
 }
 
-extern "C" const char* StackPlz(int pid, uint64_t reg_mask, void* unwind_buf) {
-  return unwinddaemon::UnwindCallChain(pid, reg_mask, (unwinddaemon::UnwindBuf*) unwind_buf);
+extern "C" const char* StackPlz(char* map_buffer, uint64_t reg_mask, void* unwind_buf, void* stack_buf) {
+  return unwinddaemon::UnwindCallChain(map_buffer, reg_mask, (unwinddaemon::UnwindBuf*) unwind_buf, stack_buf);
 }
