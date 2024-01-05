@@ -1,4 +1,5 @@
 
+#include <inttypes.h>
 #include <iostream>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -36,8 +37,93 @@
 #include <unwindstack/UserX86.h>
 #include <unwindstack/UserX86_64.h>
 #include <unwindstack/Maps.h>
+#include <unwindstack/Arch.h>
+
+// Use the demangler from libc++.
+extern "C" char* __cxa_demangle(const char*, char*, size_t*, int* status);
 
 namespace unwinddaemon {
+
+
+class UnwinderWithPC : public unwindstack::Unwinder {
+ public:
+  UnwinderWithPC(size_t max_frames, unwindstack::Maps* maps, unwindstack::Regs* regs, std::shared_ptr<unwindstack::Memory> process_memory, bool show_pc)
+      : unwindstack::Unwinder(max_frames, maps, regs, process_memory), show_pc(show_pc) {}
+  virtual ~UnwinderWithPC() = default;
+
+  bool Init();
+  
+  std::string FormatFrame(size_t frame_num) const;
+
+ protected:
+  bool show_pc = false;
+};
+
+std::string UnwinderWithPC::FormatFrame(size_t frame_num) const {
+  if (frame_num >= frames_.size()) {
+    return "";
+  }
+  const unwindstack::FrameData& frame = frames_[frame_num];
+
+  std::string data;
+  if (show_pc) {
+    if (ArchIs32Bit(arch_)) {
+      data += android::base::StringPrintf("  #%02zu pc %08" PRIx64 " %08" PRIx64, frame.num, frame.pc, frame.rel_pc);
+    } else {
+      data += android::base::StringPrintf("  #%02zu pc %016" PRIx64 " %016" PRIx64, frame.num, frame.pc, frame.rel_pc);
+    }
+  } else {
+    if (ArchIs32Bit(arch_)) {
+      data += android::base::StringPrintf("  #%02zu pc %08" PRIx64, frame.num, frame.rel_pc);
+    } else {
+      data += android::base::StringPrintf("  #%02zu pc %016" PRIx64, frame.num, frame.rel_pc);
+    }
+  }
+
+  auto map_info = frame.map_info;
+  if (map_info == nullptr) {
+    // No valid map associated with this frame.
+    data += "  <unknown>";
+  } else if (!map_info->name().empty()) {
+    data += "  ";
+    data += map_info->GetFullName();
+  } else {
+    data += android::base::StringPrintf("  <anonymous:%" PRIx64 ">", map_info->start());
+  }
+
+  if (map_info != nullptr && map_info->elf_start_offset() != 0) {
+    data += android::base::StringPrintf(" (offset 0x%" PRIx64 ")", map_info->elf_start_offset());
+  }
+
+  if (!frame.function_name.empty()) {
+    char* demangled_name = __cxa_demangle(frame.function_name.c_str(), nullptr, nullptr, nullptr);
+    if (demangled_name == nullptr) {
+      data += " (";
+      data += frame.function_name;
+    } else {
+      data += " (";
+      data += demangled_name;
+      free(demangled_name);
+    }
+    if (frame.function_offset != 0) {
+      data += android::base::StringPrintf("+%" PRId64, frame.function_offset);
+    }
+    data += ')';
+  }
+
+  if (map_info != nullptr && display_build_id_) {
+    std::string build_id = map_info->GetPrintableBuildID();
+    if (!build_id.empty()) {
+      data += " (BuildId: " + build_id + ')';
+    }
+  }
+  return data;
+}
+
+struct UnwindOption {
+    uint64_t reg_mask;
+    bool show_pc;
+};
 
 struct UnwindBuf {
     uint64_t abi;
@@ -144,7 +230,7 @@ bool RegSet::GetSpRegValue(uint64_t* value) const {
   return GetRegValue(regno, value);
 }
 
-std::string DumpFrames(const unwindstack::Unwinder& unwinder) {
+std::string DumpFrames(const UnwinderWithPC& unwinder) {
   std::string str;
   for (size_t i = 0; i < unwinder.NumFrames(); i++) {
     str += unwinder.FormatFrame(i) + "\n";
@@ -224,10 +310,10 @@ unwindstack::Regs* GetBacktraceRegs(const RegSet& regs) {
   }
 }
 
-const char* UnwindCallChain(char* map_buffer, uint64_t reg_mask, UnwindBuf *data_buf, void* stack_buf) {
+const char* UnwindCallChain(char* map_buffer, UnwindOption *opt, UnwindBuf *data_buf, void* stack_buf) {
     const char* result = "";
-    // std::cerr << "pid:" << pid << "reg_mask:" << reg_mask << "abi:" << data_buf->abi << std::endl;
-    RegSet regs(data_buf->abi, reg_mask, data_buf->regs);
+    // std::cerr << "pid:" << pid << "reg_mask:" << opt->reg_mask << "abi:" << data_buf->abi << std::endl;
+    RegSet regs(data_buf->abi, opt->reg_mask, data_buf->regs);
 
     uint64_t sp_reg_value;
     if (!regs.GetSpRegValue(&sp_reg_value)) {
@@ -249,7 +335,7 @@ const char* UnwindCallChain(char* map_buffer, uint64_t reg_mask, UnwindBuf *data
     std::unique_ptr<unwindstack::Maps> maps;
     maps.reset(new unwindstack::BufferMaps(map_buffer));
     maps->Parse();
-    unwindstack::Unwinder unwinder(512, maps.get(), unwind_regs.get(), stack_memory);
+    UnwinderWithPC unwinder(512, maps.get(), unwind_regs.get(), stack_memory, opt->show_pc);
     // default is true
     // unwinder.SetResolveNames(false);
     unwinder.Unwind();
@@ -262,6 +348,6 @@ const char* UnwindCallChain(char* map_buffer, uint64_t reg_mask, UnwindBuf *data
 }
 }
 
-extern "C" const char* StackPlz(char* map_buffer, uint64_t reg_mask, void* unwind_buf, void* stack_buf) {
-  return unwinddaemon::UnwindCallChain(map_buffer, reg_mask, (unwinddaemon::UnwindBuf*) unwind_buf, stack_buf);
+extern "C" const char* StackPlz(char* map_buffer, void* opt, void* unwind_buf, void* stack_buf) {
+  return unwinddaemon::UnwindCallChain(map_buffer, (unwinddaemon::UnwindOption*) opt, (unwinddaemon::UnwindBuf*) unwind_buf, stack_buf);
 }
