@@ -121,15 +121,11 @@ std::string UnwinderWithPC::FormatFrame(size_t frame_num) const {
 }
 
 struct UnwindOption {
+    uint64_t abi;
+    uint64_t stack_size;
+    uint64_t dyn_size;
     uint64_t reg_mask;
     bool show_pc;
-};
-
-struct UnwindBuf {
-    uint64_t abi;
-    uint64_t regs[33];
-    uint64_t size;
-    uint64_t dyn_size;
 };
 
 enum ArchType {
@@ -195,10 +191,11 @@ RegSet::RegSet(int abi, uint64_t valid_mask, const uint64_t* valid_regs) : valid
       data[i] = valid_regs[j++];
     }
   }
-  if (ScopedCurrentArch::GetCurrentArch() == ARCH_ARM64 && abi == PERF_SAMPLE_REGS_ABI_32) {
-    // The kernel dumps arm64 regs, but we need arm regs. So map arm64 regs into arm regs.
-    data[PERF_REG_ARM_PC] = data[PERF_REG_ARM64_PC];
-  }
+  // actually, don't need this
+  // if (ScopedCurrentArch::GetCurrentArch() == ARCH_ARM64 && abi == PERF_SAMPLE_REGS_ABI_32) {
+  //   // The kernel dumps arm64 regs, but we need arm regs. So map arm64 regs into arm regs.
+  //   data[PERF_REG_ARM_PC] = data[PERF_REG_ARM64_PC];
+  // }
 }
 
 bool RegSet::GetRegValue(size_t regno, uint64_t* value) const {
@@ -310,10 +307,10 @@ unwindstack::Regs* GetBacktraceRegs(const RegSet& regs) {
   }
 }
 
-const char* UnwindCallChain(char* map_buffer, UnwindOption *opt, UnwindBuf *data_buf, void* stack_buf) {
+const char* UnwindCallChain(char* map_buffer, UnwindOption* opt, uint64_t* regs_buf, void* stack_buf) {
     const char* result = "";
-    // std::cerr << "pid:" << pid << "reg_mask:" << opt->reg_mask << "abi:" << data_buf->abi << std::endl;
-    RegSet regs(data_buf->abi, opt->reg_mask, data_buf->regs);
+    // std::cerr << "pid:" << pid << "reg_mask:" << opt->reg_mask << "abi:" << opt->abi << std::endl;
+    RegSet regs(opt->abi, opt->reg_mask, regs_buf);
 
     uint64_t sp_reg_value;
     if (!regs.GetSpRegValue(&sp_reg_value)) {
@@ -322,7 +319,7 @@ const char* UnwindCallChain(char* map_buffer, UnwindOption *opt, UnwindBuf *data
     }
     
     uint64_t stack_addr = sp_reg_value;
-    size_t stack_size = data_buf->dyn_size;
+    size_t stack_size = opt->dyn_size;
     
     std::unique_ptr<unwindstack::Regs> unwind_regs(GetBacktraceRegs(regs));
     if (!unwind_regs) {
@@ -348,6 +345,6 @@ const char* UnwindCallChain(char* map_buffer, UnwindOption *opt, UnwindBuf *data
 }
 }
 
-extern "C" const char* StackPlz(char* map_buffer, void* opt, void* unwind_buf, void* stack_buf) {
-  return unwinddaemon::UnwindCallChain(map_buffer, (unwinddaemon::UnwindOption*) opt, (unwinddaemon::UnwindBuf*) unwind_buf, stack_buf);
+extern "C" const char* StackPlz(char* map_buffer, void* opt, void* regs_buf, void* stack_buf) {
+  return unwinddaemon::UnwindCallChain(map_buffer, (unwinddaemon::UnwindOption*) opt, (uint64_t*) regs_buf, stack_buf);
 }
