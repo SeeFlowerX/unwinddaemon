@@ -1,6 +1,22 @@
 # unwinddaemon
 
-## 编译步骤
+## CMAKE + NDK编译步骤
+
+```bash
+./init-submodules.sh
+git submodule init
+git submodule update --remote
+```
+
+去除`external/unwinding/libunwindstack/Demangle.cpp`的rust部分
+
+配置好脚本中NDK路径，然后编译，目前最低Android 11，看看能不能适配到Android 10
+
+```bash
+./build.sh
+```
+
+## 基于AOSP的编译步骤
 
 - 同步AOSP
 - 在AOSP源码文件夹下创建`system/extras/unwinddaemon`文件夹

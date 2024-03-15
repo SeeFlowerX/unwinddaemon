@@ -345,6 +345,7 @@ const char* UnwindCallChain(char* map_buffer, UnwindOption* opt, uint64_t* regs_
 }
 }
 
+__attribute__ ((visibility("default")))
 extern "C" const char* StackPlz(char* map_buffer, void* opt, void* regs_buf, void* stack_buf) {
   return unwinddaemon::UnwindCallChain(map_buffer, (unwinddaemon::UnwindOption*) opt, (uint64_t*) regs_buf, stack_buf);
 }

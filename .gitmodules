@@ -1,0 +1,32 @@
+[submodule "external/art"]
+	path = external/art
+	url = https://android.googlesource.com/platform/art
+	branch = android14-release
+[submodule "external/libbase"]
+	path = external/libbase
+	url = https://android.googlesource.com/platform/system/libbase
+	branch = android14-release
+[submodule "external/logging"]
+	path = external/logging
+	url = https://android.googlesource.com/platform/system/logging
+	branch = android14-release
+[submodule "external/libnativehelper"]
+	path = external/libnativehelper
+	url = https://android.googlesource.com/platform/libnativehelper
+	branch = android14-release
+[submodule "external/libprocinfo"]
+	path = external/libprocinfo
+	url = https://android.googlesource.com/platform/system/libprocinfo
+	branch = android14-release
+[submodule "external/unwinding"]
+	path = external/unwinding
+	url = https://android.googlesource.com/platform/system/unwinding
+	branch = android14-release
+[submodule "external/lzma"]
+	path = external/lzma
+	url = https://android.googlesource.com/platform/external/lzma
+	branch = android14-release
+[submodule "external/bionic"]
+	path = external/bionic
+	url = https://android.googlesource.com/platform/bionic
+	branch = android14-release
