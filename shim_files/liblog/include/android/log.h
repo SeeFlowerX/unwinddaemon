@@ -217,6 +217,8 @@ typedef void (*__android_logger_function)(const struct __android_log_message* lo
  */
 typedef void (*__android_aborter_function)(const char* abort_message);
 
+#if __ANDROID_API__ >= 30
+
 /**
  * Writes the log message specified by log_message.  log_message includes additional file name and
  * line number information that a logger may use.  log_message is versioned for backwards
@@ -370,6 +372,23 @@ int32_t __android_log_get_minimum_priority(void) __INTRODUCED_IN(30);
  * Available since API level 30.
  */
 void __android_log_set_default_tag(const char* tag) __INTRODUCED_IN(30);
+
+#else
+
+void __android_log_write_log_message(struct __android_log_message* log_message);
+void __android_log_set_logger(__android_logger_function logger);
+void __android_log_logd_logger(const struct __android_log_message* log_message);
+void __android_log_stderr_logger(const struct __android_log_message* log_message);
+void __android_log_set_aborter(__android_aborter_function aborter);
+void __android_log_call_aborter(const char* abort_message);
+void __android_log_default_aborter(const char* abort_message) __attribute__((noreturn));
+int __android_log_is_loggable(int prio, const char* tag, int default_prio);
+int __android_log_is_loggable_len(int prio, const char* tag, size_t len, int default_prio);
+int32_t __android_log_set_minimum_priority(int32_t priority);
+int32_t __android_log_get_minimum_priority(void);
+void __android_log_set_default_tag(const char* tag);
+
+#endif
 
 #ifdef __cplusplus
 }

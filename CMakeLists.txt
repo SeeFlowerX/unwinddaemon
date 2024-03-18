@@ -80,7 +80,7 @@ add_library(base STATIC
         "${EXTERNAL_SRC}/libbase/strings.cpp"
         "${EXTERNAL_SRC}/libbase/threads.cpp"
 )
-target_include_directories(base PUBLIC "${EXTERNAL_SRC}/libbase/include")
+target_include_directories(base PUBLIC "${EXTERNAL_SRC}/libbase/include" "${SHIM_SRC}/liblog/include")
 target_compile_options(base PRIVATE -Wno-c99-designator)
 
 add_library(procinfo STATIC "${EXTERNAL_SRC}/libprocinfo/process.cpp")
