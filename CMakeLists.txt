@@ -131,7 +131,8 @@ target_compile_options(lzma PRIVATE -fPIC "-D_7ZIP_ST")
 add_library(unwindstack STATIC
         "${UNWINDING_SRC}/libunwindstack/AndroidUnwinder.cpp"
         "${UNWINDING_SRC}/libunwindstack/ArmExidx.cpp"
-        "${UNWINDING_SRC}/libunwindstack/Demangle.cpp"
+        # "${UNWINDING_SRC}/libunwindstack/Demangle.cpp"
+        "shim_files/Demangle.cpp"
         "${UNWINDING_SRC}/libunwindstack/DexFiles.cpp"
         "${UNWINDING_SRC}/libunwindstack/DwarfCfa.cpp"
         "${UNWINDING_SRC}/libunwindstack/DwarfEhFrameWithHdr.cpp"
@@ -158,7 +159,8 @@ add_library(unwindstack STATIC
         "${UNWINDING_SRC}/libunwindstack/RegsMips64.cpp"
         "${UNWINDING_SRC}/libunwindstack/Symbols.cpp"
         "${UNWINDING_SRC}/libunwindstack/ThreadEntry.cpp"
-        "${UNWINDING_SRC}/libunwindstack/ThreadUnwinder.cpp"
+        # "${UNWINDING_SRC}/libunwindstack/ThreadUnwinder.cpp"
+        "shim_files/ThreadUnwinder.cpp"
         "${UNWINDING_SRC}/libunwindstack/Unwinder.cpp"
 
         "${UNWINDING_SRC}/libunwindstack/DexFile.cpp"
@@ -168,6 +170,7 @@ add_library(unwindstack STATIC
 )
 
 target_include_directories(unwindstack
+        PUBLIC "${UNWINDING_SRC}/libunwindstack"
         PUBLIC "${UNWINDING_SRC}/libunwindstack/include"
         PUBLIC "${EXTERNAL_SRC}/libbase/include"
         PUBLIC "${EXTERNAL_SRC}/bionic/libc/platform"

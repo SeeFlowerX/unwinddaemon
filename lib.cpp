@@ -9,18 +9,28 @@
 #include <android-base/stringprintf.h>
 
 #if defined(USE_BIONIC_UAPI_HEADERS)
-#include <uapi/linux/perf_event.h>
 #include <uapi/asm-arm/asm/perf_regs.h>
+#undef PERF_REG_EXTENDED_MASK
 #include <uapi/asm-x86/asm/perf_regs.h>
+#undef PERF_REG_EXTENDED_MASK
+#include <uapi/asm-riscv/asm/perf_regs.h>
+#undef PERF_REG_EXTENDED_MASK
 #define perf_event_arm_regs perf_event_arm64_regs
 #include <uapi/asm-arm64/asm/perf_regs.h>
+#undef PERF_REG_EXTENDED_MASK
 #else
-#include <linux/perf_event.h>
 #include <asm-arm/asm/perf_regs.h>
+#undef PERF_REG_EXTENDED_MASK
 #include <asm-x86/asm/perf_regs.h>
+#undef PERF_REG_EXTENDED_MASK
+#include <asm-riscv/asm/perf_regs.h>
+#undef PERF_REG_EXTENDED_MASK
 #define perf_event_arm_regs perf_event_arm64_regs
 #include <asm-arm64/asm/perf_regs.h>
+#undef PERF_REG_EXTENDED_MASK
 #endif
+
+#include <linux/perf_event.h>
 
 #include <unwindstack/Unwinder.h>
 #include <unwindstack/MachineArm.h>
