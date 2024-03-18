@@ -19,7 +19,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -Werror=non-virt
 
 set(SHIM_SRC "shim_files")
 set(EXTERNAL_SRC "external")
-set(LOGGING_SRC "external/logging")
 set(UNWINDING_SRC "external/unwinding")
 
 if (DEFINED ANDROID_ABI)
@@ -179,7 +178,7 @@ target_include_directories(unwindstack
         PUBLIC "${EXTERNAL_SRC}/libprocinfo/include"
         PUBLIC "${EXTERNAL_SRC}/lzma/C"
         PUBLIC "${EXTERNAL_SRC}/art/libdexfile/external/include"
-        PUBLIC "${LOGGING_SRC}/liblog/include"
+        PUBLIC "${SHIM_SRC}/liblog/include"
 )
 target_compile_options(unwindstack PRIVATE -Wno-c99-designator)
 
