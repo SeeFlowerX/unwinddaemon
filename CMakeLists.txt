@@ -17,6 +17,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,text,-z,defs,
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -Werror=non-virtual-dtor -Werror=delete-non-virtual-dtor")
 
+set(SHIM_SRC "shim_files")
 set(EXTERNAL_SRC "external")
 set(LOGGING_SRC "external/logging")
 set(UNWINDING_SRC "external/unwinding")
@@ -132,7 +133,7 @@ add_library(unwindstack STATIC
         "${UNWINDING_SRC}/libunwindstack/AndroidUnwinder.cpp"
         "${UNWINDING_SRC}/libunwindstack/ArmExidx.cpp"
         # "${UNWINDING_SRC}/libunwindstack/Demangle.cpp"
-        "shim_files/Demangle.cpp"
+        "${SHIM_SRC}/libunwindstack/Demangle.cpp"
         "${UNWINDING_SRC}/libunwindstack/DexFiles.cpp"
         "${UNWINDING_SRC}/libunwindstack/DwarfCfa.cpp"
         "${UNWINDING_SRC}/libunwindstack/DwarfEhFrameWithHdr.cpp"
@@ -160,7 +161,7 @@ add_library(unwindstack STATIC
         "${UNWINDING_SRC}/libunwindstack/Symbols.cpp"
         "${UNWINDING_SRC}/libunwindstack/ThreadEntry.cpp"
         # "${UNWINDING_SRC}/libunwindstack/ThreadUnwinder.cpp"
-        "shim_files/ThreadUnwinder.cpp"
+        "${SHIM_SRC}/libunwindstack/ThreadUnwinder.cpp"
         "${UNWINDING_SRC}/libunwindstack/Unwinder.cpp"
 
         "${UNWINDING_SRC}/libunwindstack/DexFile.cpp"
