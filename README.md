@@ -8,13 +8,29 @@ git submodule init
 git submodule update --remote
 ```
 
-去除`external/unwinding/libunwindstack/Demangle.cpp`的rust部分
+编译执行下面的脚本即可，产物位于`build`文件夹，注意只有单个so，部分依赖为静态编译，具体请阅读`CMakeLists.txt`
 
-配置好脚本中NDK路径，然后编译，目前最低Android 11，看看能不能适配到Android 10
+记得先修改`ANDROID_NDK`路径，如果要编译Android 10的版本，请将`ANDROID_PLATFORM`修改为`android-29`
 
 ```bash
 ./build.sh
 ```
+
+关于`shim_files`的构成：
+
+- liblog
+    - 这个下面的头文件其实就是从`system/logging`拿过来的
+    - 了能编译出在Android10上使用的库，给`include/android/log.h`添加了一些Android10上没有的函数声明
+    - 测试暂时没有出现崩溃迹象
+
+- libunwindstack
+    - 项目所需要的源码是从`android14-release`分支拉取的，`Demangle.cpp`有rust相关的内容，这里去掉了
+    - `ThreadUnwinder.cpp`中有关`struct sigaction`的初始化会被编译器报警告，这里改了一下
+
+**本方案编译实现主要参考了以下两个项目，感谢：**
+
+- https://github.com/cinit/libunwindstack
+- https://github.com/Mufanc/libunwindstack-standalone
 
 ## 基于AOSP的编译步骤
 
