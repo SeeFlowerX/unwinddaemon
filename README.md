@@ -20,7 +20,7 @@ git submodule update --remote
 
 - liblog
     - 这个下面的头文件其实就是从`system/logging`拿过来的
-    - 了能编译出在Android10上使用的库，给`include/android/log.h`添加了一些Android10上没有的函数声明
+    - 为了能编译出在Android10上使用的库，给`include/android/log.h`添加了一些Android10上没有的函数声明
     - 测试暂时没有出现崩溃迹象
 
 - libunwindstack
