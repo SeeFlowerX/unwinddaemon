@@ -2,10 +2,17 @@
 
 ## CMAKE + NDK编译步骤
 
+拉取本项目，然后执行下面的命令
+
 ```bash
-./init-submodules.sh
 git submodule init
 git submodule update --remote
+```
+
+如果是想手工配置，则执行下面的脚本
+
+```bash
+./init-submodules.sh
 ```
 
 编译执行下面的脚本即可，产物位于`build`文件夹，注意只有单个so，部分依赖为静态编译，具体请阅读`CMakeLists.txt`
