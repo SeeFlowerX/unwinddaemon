@@ -20,6 +20,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -Werror=non-virt
 set(SHIM_SRC "shim_files")
 set(EXTERNAL_SRC "external")
 set(UNWINDING_SRC "external/unwinding")
+set(DEXFILE_SRC "external/art/libdexfile")
 
 if (DEFINED ANDROID_ABI)
     if (ANDROID_ABI STREQUAL "x86")
@@ -128,6 +129,14 @@ add_library(lzma STATIC
 target_include_directories(lzma PUBLIC "${EXTERNAL_SRC}/lzma/C")
 target_compile_options(lzma PRIVATE -fPIC "-D_7ZIP_ST")
 
+add_library(dexfile_support STATIC
+        "${DEXFILE_SRC}/external/dex_file_supp.cc"
+)
+target_include_directories(dexfile_support
+        PUBLIC "${DEXFILE_SRC}/external/include"
+        PUBLIC "${SHIM_SRC}/liblog/include"
+)
+
 add_library(unwindstack STATIC
         "${UNWINDING_SRC}/libunwindstack/AndroidUnwinder.cpp"
         "${UNWINDING_SRC}/libunwindstack/ArmExidx.cpp"
@@ -181,6 +190,7 @@ target_include_directories(unwindstack
         PUBLIC "${SHIM_SRC}/liblog/include"
 )
 target_compile_options(unwindstack PRIVATE -Wno-c99-designator)
+target_compile_definitions(unwindstack PRIVATE DEXFILE_SUPPORT=1)
 
 # check are we top-level project
 if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
@@ -192,7 +202,8 @@ if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     target_include_directories(${PROJECT_NAME} PUBLIC ${EXTERNAL_SRC}/libbase/include)
     target_include_directories(${PROJECT_NAME} PUBLIC ${EXTERNAL_SRC}/bionic/libc/kernel/uapi)
     target_include_directories(${PROJECT_NAME} PUBLIC ${EXTERNAL_SRC}/unwinding/libunwindstack/include)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEXFILE_SUPPORT=1)
 
-    target_link_libraries(${PROJECT_NAME} base procinfo lzma unwindstack log)
+    target_link_libraries(${PROJECT_NAME} base procinfo lzma dexfile_support unwindstack log)
 
 endif ()

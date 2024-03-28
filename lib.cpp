@@ -7,6 +7,7 @@
 
 #include <android-base/file.h>
 #include <android-base/stringprintf.h>
+#include <android-base/logging.h>
 
 #if defined(USE_BIONIC_UAPI_HEADERS)
 #include <uapi/asm-arm/asm/perf_regs.h>
@@ -48,6 +49,9 @@
 #include <unwindstack/UserX86_64.h>
 #include <unwindstack/Maps.h>
 #include <unwindstack/Arch.h>
+#include <unwindstack/DexFiles.h>
+#include <unwindstack/JitDebug.h>
+#include <unwindstack/Memory.h>
 
 // Use the demangler from libc++.
 extern "C" char* __cxa_demangle(const char*, char*, size_t*, int* status);
@@ -67,6 +71,7 @@ class UnwinderWithPC : public unwindstack::Unwinder {
 
  protected:
   bool show_pc = false;
+  std::unique_ptr<unwindstack::DexFiles> dex_files_ptr_;
 };
 
 std::string UnwinderWithPC::FormatFrame(size_t frame_num) const {
@@ -319,6 +324,7 @@ unwindstack::Regs* GetBacktraceRegs(const RegSet& regs) {
 
 const char* UnwindCallChain(char* map_buffer, UnwindOption* opt, uint64_t* regs_buf, void* stack_buf) {
     const char* result = "";
+    SetMinimumLogSeverity(android::base::DEBUG);
     // std::cerr << "pid:" << pid << "reg_mask:" << opt->reg_mask << "abi:" << opt->abi << std::endl;
     RegSet regs(opt->abi, opt->reg_mask, regs_buf);
 
@@ -342,9 +348,13 @@ const char* UnwindCallChain(char* map_buffer, UnwindOption* opt, uint64_t* regs_
     std::unique_ptr<unwindstack::Maps> maps;
     maps.reset(new unwindstack::BufferMaps(map_buffer));
     maps->Parse();
+
+    std::unique_ptr<unwindstack::DexFiles> dex_files = CreateDexFiles(unwind_regs->Arch(), stack_memory);
+  
     UnwinderWithPC unwinder(512, maps.get(), unwind_regs.get(), stack_memory, opt->show_pc);
     // default is true
     // unwinder.SetResolveNames(false);
+    unwinder.SetDexFiles(dex_files.get());
     unwinder.Unwind();
     std::string frame_info = DumpFrames(unwinder);
     // int len = frame_info.length();
