@@ -414,14 +414,17 @@ unwindstack::Regs* GetBacktraceRegs(const RegSet& regs) {
 }
 
 const char* UnwindCallChain(char* map_buffer, UnwindOption* opt, uint64_t* regs_buf, void* stack_buf) {
-    const char* result = "";
     // std::cerr << "pid:" << pid << "reg_mask:" << opt->reg_mask << "abi:" << opt->abi << std::endl;
     RegSet regs(opt->abi, opt->reg_mask, regs_buf);
 
     uint64_t sp_reg_value;
     if (!regs.GetSpRegValue(&sp_reg_value)) {
         std::cerr << "can't get sp reg value";
-        return result;
+        char* empty_result = (char*)malloc(1);
+        if (empty_result) {
+            empty_result[0] = '\0';
+        }
+        return empty_result;
     }
     
     uint64_t stack_addr = sp_reg_value;
@@ -429,7 +432,11 @@ const char* UnwindCallChain(char* map_buffer, UnwindOption* opt, uint64_t* regs_
     
     std::unique_ptr<unwindstack::Regs> unwind_regs(GetBacktraceRegs(regs));
     if (!unwind_regs) {
-      return result;
+      char* empty_result = (char*)malloc(1);
+      if (empty_result) {
+          empty_result[0] = '\0';
+      }
+      return empty_result;
     }
     std::shared_ptr<unwindstack::Memory> stack_memory = unwindstack::Memory::CreateOfflineMemory(
         reinterpret_cast<const uint8_t*>(stack_buf), stack_addr, stack_addr + stack_size
@@ -447,12 +454,15 @@ const char* UnwindCallChain(char* map_buffer, UnwindOption* opt, uint64_t* regs_
     // int len = frame_info.length();
     // send(client_sockfd, &len, 4, 0);
     // send(client_sockfd, frame_info.c_str(), len, 0);
-    result = frame_info.c_str();
-    return result;
+    char* result_on_heap = (char*)malloc(frame_info.length() + 1);
+    if (result_on_heap == nullptr) {
+        return nullptr; 
+    }
+    strcpy(result_on_heap, frame_info.c_str());
+    return result_on_heap;
 }
 
 const char* UnwindCallChainV2(int pid, UnwindOption* opt, uint64_t* regs_buf, void* stack_buf) {
-    const char* result = "";
     // SetMinimumLogSeverity(android::base::DEBUG);
 
     RegSet regs(opt->abi, opt->reg_mask, regs_buf);
@@ -460,7 +470,11 @@ const char* UnwindCallChainV2(int pid, UnwindOption* opt, uint64_t* regs_buf, vo
     uint64_t sp_reg_value;
     if (!regs.GetSpRegValue(&sp_reg_value)) {
         std::cerr << "can't get sp reg value";
-        return result;
+        char* empty_result = (char*)malloc(1);
+        if (empty_result) {
+            empty_result[0] = '\0';
+        }
+        return empty_result;
     }
     
     uint64_t stack_addr = sp_reg_value;
@@ -468,7 +482,11 @@ const char* UnwindCallChainV2(int pid, UnwindOption* opt, uint64_t* regs_buf, vo
     
     std::unique_ptr<unwindstack::Regs> unwind_regs(GetBacktraceRegs(regs));
     if (!unwind_regs) {
-      return result;
+      char* empty_result = (char*)malloc(1);
+      if (empty_result) {
+          empty_result[0] = '\0';
+      }
+      return empty_result;
     }
 
     MyAndroidRemoteUnwinder unwinder((pid_t) pid, opt->show_pc);
@@ -492,8 +510,12 @@ const char* UnwindCallChainV2(int pid, UnwindOption* opt, uint64_t* regs_buf, vo
       frame_info += unwinder.FormatFrame(frame) + '\n';
     }
 
-    result = frame_info.c_str();
-    return result;
+    char* result_on_heap = (char*)malloc(frame_info.length() + 1);
+    if (result_on_heap == nullptr) {
+        return nullptr;
+    }
+    strcpy(result_on_heap, frame_info.c_str());
+    return result_on_heap;
 }
 }
 
