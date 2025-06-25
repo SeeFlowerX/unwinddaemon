@@ -1,9 +1,5 @@
-# GitHub Actions Workflow for building the stackplz/unwinddaemon project
-# 文件路径: .github/workflows/build.yml
-
 name: Android CI Build
 
-# 触发工作流的事件
 on:
   push:
     branches: [ "main", "master" ]
@@ -12,20 +8,17 @@ on:
 
 jobs:
   build-android:
-    # 使用最新的 Ubuntu 虚拟机运行
     runs-on: ubuntu-latest
 
     steps:
-      # 步骤 1: 检出代码
-      # submodules: 'recursive' 会自动初始化并拉取所有子模块
+      # 步骤 1: 检出代码和所有子模块
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
 
-      # 步骤 2: 设置 Android NDK
-      # 使用 nttld/setup-ndk action 下载和配置 NDK r25b
-      # 它会自动设置 ANDROID_NDK_HOME 环境变量，供后续步骤使用
+      # 步骤 2: 安装 NDK 并设置 ANDROID_NDK_HOME 环境变量
+      # 这一步会成功执行，并在后续步骤中提供 ${{ env.ANDROID_NDK_HOME }} 变量
       - name: Setup Android NDK
         id: setup-ndk
         uses: nttld/setup-ndk@v1
@@ -36,30 +29,28 @@ jobs:
       - name: Create build directory
         run: mkdir build
 
-      # 步骤 4: 运行 CMake 配置 (已修复)
-      # - 使用 'working-directory' 来指定命令的执行目录
-      # - 正确使用 ${{ env.ANDROID_NDK_HOME }} 来引用 NDK 路径
-      # - 所有参数都放在一个'run'块中，避免语法错误
+      # 步骤 4: 运行 CMake 配置 (关键修复)
+      # - 'env:' 块确保 ANDROID_NDK_HOME 在这个步骤的 shell 环境中可用。
+      # - 在 'run:' 脚本中，我们使用 $ANDROID_NDK_HOME (标准的 shell 语法) 来引用这个变量。
+      #   这比 ${{...}} 语法在多行脚本中更可靠。
       - name: Configure CMake
         working-directory: build
-        run: >
-          cmake 
-          -DCMAKE_TOOLCHAIN_FILE=${{ env.ANDROID_NDK_HOME }}/build/cmake/android.toolchain.cmake
-          -DANDROID_NDK=${{ env.ANDROID_NDK_HOME }}
-          -DANDROID_ABI="arm64-v8a"
-          -DANDROID_PLATFORM=android-30
-          -DANDROID=1
-          ..
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          cmake .. \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_NDK="$ANDROID_NDK_HOME" \
+            -DANDROID_ABI="arm64-v8a" \
+            -DANDROID_PLATFORM=android-30 \
+            -DANDROID=1
 
       # 步骤 5: 编译项目
-      # - 'make -j$(nproc)' 会使用所有可用的 CPU 核心并行编译，以加快速度
       - name: Build with Make
         working-directory: build
         run: make -j$(nproc)
 
-      # 步骤 6: 上传构建产物 (已优化)
-      # - 根据 CMakeLists.txt，项目名为 stackplz，产物为 libstackplz.so
-      # - 我们将这个核心产物上传
+      # 步骤 6: 上传构建产物 libstackplz.so
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
