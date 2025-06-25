@@ -1,14 +1,12 @@
-# GitHub Actions Workflow for building the unwinddaemon project
+# GitHub Actions Workflow for building the stackplz/unwinddaemon project
 # 文件路径: .github/workflows/build.yml
 
 name: Android CI Build
 
 # 触发工作流的事件
 on:
-  # 在推送到任何分支时运行
   push:
     branches: [ "main", "master" ]
-  # 在创建或更新到 main/master 分支的拉取请求时运行
   pull_request:
     branches: [ "main", "master" ]
 
@@ -19,54 +17,51 @@ jobs:
 
     steps:
       # 步骤 1: 检出代码
-      # 使用 actions/checkout@v4 来获取你的代码。
-      # submodules: 'recursive' 是关键，它会自动运行 'git submodule update --init --recursive'
-      # 这替代了你的 init-submodules.sh 脚本中的逻辑。
+      # submodules: 'recursive' 会自动初始化并拉取所有子模块
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
 
       # 步骤 2: 设置 Android NDK
-      # 使用 nttld/setup-ndk action 来下载和配置 NDK。
-      # 这解决了 build.sh 中硬编码 ANDROID_NDK 路径的问题。
-      # 该 action 会创建一个名为 ANDROID_NDK_HOME 的环境变量，指向 NDK 的安装路径。
+      # 使用 nttld/setup-ndk action 下载和配置 NDK r25b
+      # 它会自动设置 ANDROID_NDK_HOME 环境变量，供后续步骤使用
       - name: Setup Android NDK
         id: setup-ndk
         uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r25b # 与你脚本中指定的版本一致
+          ndk-version: r25b
 
       # 步骤 3: 创建构建目录
-      # 这与你 build.sh 中的 'mkdir build' 对应。
       - name: Create build directory
         run: mkdir build
 
-      # 步骤 4: 运行 CMake 配置
-      # 这会进入 build 目录并执行 cmake 命令，配置项目。
-      # - 我们使用 ${{ env.ANDROID_NDK_HOME }} 变量来引用 NDK 路径。
-      # - 其他参数直接从你的 build.sh 中复制。
+      # 步骤 4: 运行 CMake 配置 (已修复)
+      # - 使用 'working-directory' 来指定命令的执行目录
+      # - 正确使用 ${{ env.ANDROID_NDK_HOME }} 来引用 NDK 路径
+      # - 所有参数都放在一个'run'块中，避免语法错误
       - name: Configure CMake
         working-directory: build
-        run: |
-          cmake -DCMAKE_TOOLCHAIN_FILE=${{ env.ANDROID_NDK_HOME }}/build/cmake/android.toolchain.cmake \
-                -DANDROID=1 \
-                -DANDROID_ABI="arm64-v8a" \
-                -DANDROID_NDK=${{ env.ANDROID_NDK_HOME }} \
-                -DANDROID_PLATFORM=android-30 \
-                ..
+        run: >
+          cmake 
+          -DCMAKE_TOOLCHAIN_FILE=${{ env.ANDROID_NDK_HOME }}/build/cmake/android.toolchain.cmake
+          -DANDROID_NDK=${{ env.ANDROID_NDK_HOME }}
+          -DANDROID_ABI="arm64-v8a"
+          -DANDROID_PLATFORM=android-30
+          -DANDROID=1
+          ..
 
       # 步骤 5: 编译项目
-      # - 'make -j$(nproc)' 会使用所有可用的 CPU核心并行编译，以加快速度。
+      # - 'make -j$(nproc)' 会使用所有可用的 CPU 核心并行编译，以加快速度
       - name: Build with Make
         working-directory: build
         run: make -j$(nproc)
 
-      # 步骤 6: 上传构建产物 (Artifacts)
-      # 将整个 build 目录打包上传。
-      # 构建成功后，你可以在 GitHub Actions 的运行结果页面找到并下载这个名为 "unwinddaemon-lib" 的 zip 文件。
+      # 步骤 6: 上传构建产物 (已优化)
+      # - 根据 CMakeLists.txt，项目名为 stackplz，产物为 libstackplz.so
+      # - 我们将这个核心产物上传
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: unwinddaemon-lib-arm64-v8a
-          path: build/ # 上传整个 build 目录
+          name: libstackplz-arm64-v8a
+          path: build/libstackplz.so
